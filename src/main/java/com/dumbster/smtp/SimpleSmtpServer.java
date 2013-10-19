@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.slf4j.Logger;
@@ -51,11 +52,6 @@ public class SimpleSmtpServer implements Runnable {
 
 	private static final Logger logger = LoggerFactory
 			.getLogger(SimpleSmtpServer.class);
-
-	/**
-	 * Stores all of the email received since this instance started up.
-	 */
-	private List<SmtpMessage> receivedMail;
 
 	private MockimailConfig mockimailConfig;
 
@@ -95,7 +91,6 @@ public class SimpleSmtpServer implements Runnable {
 	 *            port number
 	 */
 	public SimpleSmtpServer(int port) {
-		receivedMail = new ArrayList<SmtpMessage>();
 		this.port = port;
 		mapper = new ObjectMapper();
 	}
@@ -156,7 +151,6 @@ public class SimpleSmtpServer implements Runnable {
 						clientES.index(indexRequest).actionGet();
 
 					}
-					receivedMail.addAll(msgs);
 				}
 				socket.close();
 			}
@@ -332,7 +326,10 @@ public class SimpleSmtpServer implements Runnable {
 	 * @return List of String
 	 */
 	public synchronized Iterator<SmtpMessage> getReceivedEmail() {
-		return receivedMail.iterator();
+		// TODO a adapter
+
+		// return receivedMail.iterator();
+		return null;
 	}
 
 	/**
@@ -340,8 +337,10 @@ public class SimpleSmtpServer implements Runnable {
 	 * 
 	 * @return size of received email list
 	 */
-	public synchronized int getReceivedEmailSize() {
-		return receivedMail.size();
+	public synchronized long getReceivedEmailSize() {
+		SearchResponse response = clientES.prepareSearch().execute()
+				.actionGet();
+		return response.getHits().getTotalHits();
 	}
 
 	public Client getClientES() {
