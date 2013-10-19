@@ -15,6 +15,7 @@
  * limitations under the License.
  * 
  * Updated and adapted for mockimail
+ * https://github.com/w3blogfr/mockimail
  */
 package com.dumbster.smtp;
 
@@ -39,6 +40,8 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import fr.w3blog.mockimail.config.MockimailConfig;
+
 /**
  * Dummy SMTP server for testing purposes.
  * 
@@ -53,6 +56,8 @@ public class SimpleSmtpServer implements Runnable {
 	 * Stores all of the email received since this instance started up.
 	 */
 	private List<SmtpMessage> receivedMail;
+
+	private MockimailConfig mockimailConfig;
 
 	private Client clientES;
 
@@ -144,7 +149,8 @@ public class SimpleSmtpServer implements Runnable {
 					List<SmtpMessage> msgs = handleTransaction(out, input);
 					for (SmtpMessage smtpMessage : msgs) {
 						IndexRequest indexRequest = Requests.indexRequest(
-								"mockimail").type("mail");
+								mockimailConfig.getIndexES()).type(
+								mockimailConfig.getTypeES());
 						indexRequest.source(mapper
 								.writeValueAsString(smtpMessage));
 						clientES.index(indexRequest).actionGet();
@@ -277,12 +283,21 @@ public class SimpleSmtpServer implements Runnable {
 							logger.warn("Format Date incorrect");
 							smtpMessage.addHeader(name, value);
 						}
+					} else if ("Subject".equals(name)) {
+						// Subject
+						smtpMessage.setSubject(value);
 					} else if ("To".equals(name)) {
 						// Destinataire
 						smtpMessage.getTo().add(value);
 					} else if ("From".equals(name)) {
 						// Expéditeur
 						smtpMessage.setFrom(value);
+					} else if ("Cc".equals(name)) {
+						// Destinataire en copie
+						smtpMessage.getCc().add(value);
+					} else if ("Bcc".equals(name)) {
+						// Destinataire
+						smtpMessage.getBcc().add(value);
 					} else {
 						// Other headers
 						smtpMessage.addHeader(name, value);
@@ -335,6 +350,14 @@ public class SimpleSmtpServer implements Runnable {
 
 	public void setClientES(Client clientES) {
 		this.clientES = clientES;
+	}
+
+	public MockimailConfig getMockimailConfig() {
+		return mockimailConfig;
+	}
+
+	public void setMockimailConfig(MockimailConfig mockimailConfig) {
+		this.mockimailConfig = mockimailConfig;
 	}
 
 	/**

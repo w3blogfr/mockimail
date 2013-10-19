@@ -16,5 +16,7 @@
     http://www.springframework.org/schema/mvc
     http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
 	
+	
+	<bean id="mockitomailConfig" class="fr.w3blog.mockimail.config.MockimailConfig"></bean>
 
 </beans>

@@ -31,11 +31,24 @@ public class SmtpMessage {
 
 	private Date date;
 
-	private String suject;
+	private String subject;
 
 	private String from;
 
+	/*
+	 * Destinataire principal
+	 */
 	private List<String> to = new ArrayList<String>();
+
+	/**
+	 * Destinataire en copie
+	 */
+	private List<String> cc = new ArrayList<String>();
+
+	/**
+	 * Destinataires cachés
+	 */
+	private List<String> bcc = new ArrayList<String>();
 
 	/** Headers: Map of List of String hashed on header name. */
 	private Map<String, List<String>> headers;
@@ -146,12 +159,12 @@ public class SmtpMessage {
 		this.date = date;
 	}
 
-	public String getSuject() {
-		return suject;
+	public String getSubject() {
+		return subject;
 	}
 
-	public void setSuject(String suject) {
-		this.suject = suject;
+	public void setSubject(String subject) {
+		this.subject = subject;
 	}
 
 	public String getFrom() {
@@ -168,6 +181,22 @@ public class SmtpMessage {
 
 	public void setTo(List<String> to) {
 		this.to = to;
+	}
+
+	public List<String> getCc() {
+		return cc;
+	}
+
+	public void setCc(List<String> cc) {
+		this.cc = cc;
+	}
+
+	public List<String> getBcc() {
+		return bcc;
+	}
+
+	public void setBcc(List<String> bcc) {
+		this.bcc = bcc;
 	}
 
 }

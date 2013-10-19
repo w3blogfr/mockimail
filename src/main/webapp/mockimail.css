@@ -1,0 +1,50 @@
+body{
+	padding-top:40px;
+}
+
+.navbar-inner {
+        margin-top: 0px;
+        height: 45px;
+}
+
+.navbar .brand {
+	font-size: 16px !important;	
+}
+
+table.formatting {
+  vertical-align: middle;
+  margin-left: 0px;
+}
+
+table.formatting td {
+  margin-top: 0px;
+  padding-left: 5px;
+}
+
+.navbar table.formatting .btn {
+  margin-top: 0px;
+}
+
+#searchform {
+  width: 100%;
+  margin: 5px;
+}
+
+#searchform img {
+  max-width: none;
+}
+
+#queryinput {
+  width: 98%;
+  font-size: 10pt;
+  color: #333;
+  height: 30px;
+}
+
+#meta {
+  text-align: right;
+  width: 95px;
+  font-size: 16px;
+  color: #fff;
+  vertical-align: middle;
+}

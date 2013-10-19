@@ -24,12 +24,6 @@
 		<load-on-startup>1</load-on-startup>
 	</servlet>
 	
-	
-	<servlet-mapping>
-		<servlet-name>mockimail</servlet-name>
-		<url-pattern>*.html</url-pattern>
-	</servlet-mapping>
-	
 	<servlet-mapping>
 		<servlet-name>mockimail</servlet-name>
 		<url-pattern>/rest/*</url-pattern>
