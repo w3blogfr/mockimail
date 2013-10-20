@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.ParseException;
@@ -31,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+
+import javax.mail.internet.MimeUtility;
 
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -279,17 +282,23 @@ public class SimpleSmtpServer implements Runnable {
 						}
 					} else if ("Subject".equals(name)) {
 						// Subject
-						smtpMessage.setSubject(value);
-					} else if ("To".equals(name)) {
+						try {
+							smtpMessage.setSubject(MimeUtility
+									.decodeText(value));
+						} catch (UnsupportedEncodingException e) {
+							logger.warn("Subject Coding could not be decode");
+							smtpMessage.setSubject(value);
+						}
+					} else if ("To".equalsIgnoreCase(name)) {
 						// Destinataire
 						smtpMessage.getTo().add(value);
-					} else if ("From".equals(name)) {
+					} else if ("From".equalsIgnoreCase(name)) {
 						// Expéditeur
 						smtpMessage.setFrom(value);
-					} else if ("Cc".equals(name)) {
+					} else if ("Cc".equalsIgnoreCase(name)) {
 						// Destinataire en copie
 						smtpMessage.getCc().add(value);
-					} else if ("Bcc".equals(name)) {
+					} else if ("Bcc".equalsIgnoreCase(name)) {
 						// Destinataire
 						smtpMessage.getBcc().add(value);
 					} else {
@@ -299,6 +308,7 @@ public class SimpleSmtpServer implements Runnable {
 				}
 			} else if (SmtpState.DATA_BODY == response.getNextState()) {
 				smtpMessage.appendBody(params);
+				smtpMessage.appendBody("<br/>");
 			}
 		}
 	}

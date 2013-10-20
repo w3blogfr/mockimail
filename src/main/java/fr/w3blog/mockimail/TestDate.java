@@ -1,18 +1,22 @@
 package fr.w3blog.mockimail;
 
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 public class TestDate {
 
 	public static void main(String arg[]) throws ParseException {
-		String d = "Sat, 19 Oct 2013 19:57:50 +0200";
-		SimpleDateFormat sdf = new SimpleDateFormat(
-				"EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
-		System.out.println(sdf.format(new Date()));
-		System.out.println(sdf.parse(d));
+
+		String s = "C'�tait cool";
+		CharsetEncoder encoder = Charset.forName("iso-8859-1").newEncoder();
+		System.out.println(encoder.canEncode(s));
+
+		CharsetEncoder encoderUtf = Charset.forName("UTF-8").newEncoder();
+		System.out.println(encoderUtf.canEncode(s));
+		System.out.println(s);
+
+		System.out.println(new String(s.getBytes(), Charset.forName("iso-8859-1")));
 
 	}
 }

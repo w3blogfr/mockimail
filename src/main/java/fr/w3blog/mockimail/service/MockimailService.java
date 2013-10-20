@@ -1,6 +1,10 @@
 package fr.w3blog.mockimail.service;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -14,6 +18,7 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -21,7 +26,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -55,8 +59,8 @@ public class MockimailService {
 			settings.put("node.name", "mockimail-terreur");
 			String workingDir = System.getProperty("user.dir");
 			logger.info("Stockage ES index : " + workingDir);
-			settings.put("path.data", workingDir); // settings.put("http.enabled",
-													// false);
+			settings.put("path.data", workingDir);
+			// settings.put("http.enabled", false);
 			node = NodeBuilder.nodeBuilder().settings(settings)
 					.clusterName("mockimail-es").data(true).local(true).node();
 			client = node.client();
@@ -72,10 +76,16 @@ public class MockimailService {
 
 	}
 
-	@RequestMapping(value = "/search", method = RequestMethod.GET, produces = { MediaType.APPLICATION_JSON_VALUE })
+	/**
+	 * @param query
+	 * @param timeDiff
+	 * @return
+	 * @throws IOException
+	 */
+	@RequestMapping(value = "/search", method = RequestMethod.GET, produces = { "application/json; charset=UTF-8" })
 	@ResponseBody
-	public String list(@RequestParam(required = false) String query)
-			throws IOException {
+	public String search(@RequestParam(required = false) String query,
+			@RequestParam(required = false) Long timeDiff) throws IOException {
 
 		/**
 		 * SearchResponse searchResponse = client
@@ -97,6 +107,12 @@ public class MockimailService {
 			// searchReq.setFilter(FilterBuilders.queryFilter(QueryBuilders
 			// .queryString("test")));
 		}
+		if (timeDiff != null) {
+			searchReq
+					.setFilter(FilterBuilders.rangeFilter("date").gt(
+							System.currentTimeMillis()
+									- (timeDiff.longValue() * 1000)));
+		}
 
 		SearchResponse searchResponse = searchReq.execute().actionGet();
 		// On retourne le json sans changement
@@ -105,6 +121,67 @@ public class MockimailService {
 		searchResponse.toXContent(builder, ToXContent.EMPTY_PARAMS);
 		builder.endObject();
 		return builder.string();
+
+	}
+
+	/**
+	 * @param query
+	 * @param timeDiff
+	 * @return
+	 * @throws IOException
+	 */
+	@RequestMapping(value = "/search2", method = RequestMethod.GET, produces = { "application/json; charset=UTF-8" })
+	@ResponseBody
+	public Map<String, String> search2(
+			@RequestParam(required = false) String query,
+			@RequestParam(required = false) Long timeDiff) throws IOException {
+
+		/**
+		 * SearchResponse searchResponse = client
+		 * .prepareSearch(mockimailConfig.getIndexES())
+		 * .setTypes(mockimailConfig.getTypeES())
+		 * .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+		 * .setQuery(QueryBuilders.termQuery("multi", "test")) // Query
+		 * .setFilter(FilterBuilders.rangeFilter("age").from(12).to(18)) //
+		 * Filter
+		 * .setFrom(0).setSize(60).setExplain(true).execute().actionGet();
+		 **/
+		SearchRequestBuilder searchReq = client
+				.prepareSearch(mockimailConfig.getIndexES())
+				.setTypes(mockimailConfig.getTypeES())
+				.setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+				.addSort("date", SortOrder.DESC);
+		if (query != null && !query.isEmpty()) {
+			searchReq.setQuery(QueryBuilders.queryString(query));
+			// searchReq.setFilter(FilterBuilders.queryFilter(QueryBuilders
+			// .queryString("test")));
+		}
+		if (timeDiff != null) {
+			searchReq
+					.setFilter(FilterBuilders.rangeFilter("date").gt(
+							System.currentTimeMillis()
+									- (timeDiff.longValue() * 1000)));
+		}
+
+		SearchResponse searchResponse = searchReq.execute().actionGet();
+		String s = (String) searchResponse.getHits().getAt(0).getSource()
+				.get("subject");
+		System.out.println(s);
+		CharsetEncoder encoder = Charset.forName("iso-8859-1").newEncoder();
+		System.out.println(encoder.canEncode(s));
+
+		CharsetEncoder encoderUtf = Charset.forName("UTF-8").newEncoder();
+		System.out.println(encoderUtf.canEncode(s));
+
+		Map<String, String> map = new HashMap<String, String>();
+		map.put("test", new String(s.getBytes(), Charset.forName("UTF-8")));
+		return map;
+		// On retourne le json sans changement
+		// XContentBuilder builder = XContentFactory.jsonBuilder();
+		// builder.startObject();
+		// searchResponse.toXContent(builder, ToXContent.EMPTY_PARAMS);
+		// builder.endObject();
+		// return builder.string();
 
 	}
 
