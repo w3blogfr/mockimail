@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -35,6 +36,7 @@ import java.util.Locale;
 
 import javax.mail.internet.MimeUtility;
 
+import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -42,9 +44,12 @@ import org.elasticsearch.client.Requests;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fr.w3blog.mockimail.config.MockimailConfig;
+import fr.w3blog.mockimail.model.PartMessage;
+import fr.w3blog.mockimail.model.SmtpMessage;
 
 /**
  * Dummy SMTP server for testing purposes.
@@ -145,15 +150,7 @@ public class SimpleSmtpServer implements Runnable {
 					 * the lock.
 					 */
 					List<SmtpMessage> msgs = handleTransaction(out, input);
-					for (SmtpMessage smtpMessage : msgs) {
-						IndexRequest indexRequest = Requests.indexRequest(
-								mockimailConfig.getIndexES()).type(
-								mockimailConfig.getTypeES());
-						indexRequest.source(mapper
-								.writeValueAsString(smtpMessage));
-						clientES.index(indexRequest).actionGet();
-
-					}
+					saveMessagesInElasticSearch(msgs);
 				}
 				socket.close();
 			}
@@ -167,6 +164,94 @@ public class SimpleSmtpServer implements Runnable {
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	/**
+	 * Function to transcript original message in multipart message. Then,
+	 * message is loaded in ElasticSearch Index
+	 * 
+	 * @param msgs
+	 *            list of smtpMessage
+	 * @throws IOException
+	 * @throws JsonProcessingException
+	 */
+	private void saveMessagesInElasticSearch(List<SmtpMessage> msgs)
+			throws IOException, JsonProcessingException {
+		for (SmtpMessage smtpMessage : msgs) {
+
+			boolean isMultipart = true;
+			if (StringUtils.containsIgnoreCase(smtpMessage.getContentType(),
+					"multipart")) {
+				// Multipart message
+				PartMessage partMessage = new PartMessage();
+				try {
+					BufferedReader buffIn = new BufferedReader(
+							new StringReader(smtpMessage.getBody()));
+					String line = buffIn.readLine();
+					String frontier = null;
+					StringBuilder bodyPart = new StringBuilder();
+
+					// On récupère la première ligne
+					if (line.equalsIgnoreCase("This is a multi-part message in MIME format.")) {
+						// Next line should define frontier
+						// between part message
+						frontier = buffIn.readLine().replaceAll("-", "");
+						// next line should be content type
+						line = buffIn.readLine();
+					}
+
+					while (line != null) {
+
+						if (partMessage.getContentType() == null
+								&& StringUtils.containsIgnoreCase(line,
+										"Content-type")) {
+							// Content type for this part message
+							int headerNameEnd = line.indexOf(':');
+							if (headerNameEnd >= 0) {
+								partMessage.setContentType(line.substring(
+										headerNameEnd + 1).trim());
+							} else {
+								// Content is not correct
+								isMultipart = false;
+							}
+						} else if (line.contains(frontier)) {
+							// New part message
+							partMessage.setBody(bodyPart.toString());
+
+							smtpMessage.getParts().add(partMessage);
+							partMessage = new PartMessage();
+							bodyPart = new StringBuilder();
+						} else if (!StringUtils.containsIgnoreCase(line,
+								"Content-Transfer-Encoding")) {
+							// Body
+							bodyPart.append(line);
+						}
+
+						// On lit la prochaine ligne
+						line = buffIn.readLine();
+					}
+				} catch (NullPointerException nullPointerException) {
+					isMultipart = false;
+				}
+			} else {
+				// one part message
+				isMultipart = false;
+			}
+			if (!isMultipart) {
+				// Default multipart
+				PartMessage partMessage = new PartMessage();
+				partMessage.setContentType(smtpMessage.getContentType());
+				partMessage.setBody(smtpMessage.getBody());
+				smtpMessage.getParts().add(partMessage);
+			}
+
+			IndexRequest indexRequest = Requests.indexRequest(
+					mockimailConfig.getIndexES()).type(
+					mockimailConfig.getTypeES());
+			indexRequest.source(mapper.writeValueAsString(smtpMessage));
+			clientES.index(indexRequest).actionGet();
+
 		}
 	}
 
@@ -270,7 +355,7 @@ public class SimpleSmtpServer implements Runnable {
 				if (headerNameEnd >= 0) {
 					String name = params.substring(0, headerNameEnd).trim();
 					String value = params.substring(headerNameEnd + 1).trim();
-					if ("Date".equals(name)) {
+					if (StringUtils.equalsIgnoreCase(name, "Date")) {
 						try {
 							SimpleDateFormat sdf = new SimpleDateFormat(
 									"EEE, dd MMM yyyy HH:mm:ss Z",
@@ -280,35 +365,40 @@ public class SimpleSmtpServer implements Runnable {
 							logger.warn("Format Date incorrect");
 							smtpMessage.addHeader(name, value);
 						}
-					} else if ("Subject".equals(name)) {
+					} else if (StringUtils.equalsIgnoreCase(name, "Subject")) {
 						// Subject
 						try {
 							smtpMessage.setSubject(MimeUtility
 									.decodeText(value));
 						} catch (UnsupportedEncodingException e) {
-							logger.warn("Subject Coding could not be decode");
+							logger.warn("Subject Coding could not be decoded");
 							smtpMessage.setSubject(value);
 						}
-					} else if ("To".equalsIgnoreCase(name)) {
+					} else if (StringUtils.equalsIgnoreCase(name, "To")) {
 						// Destinataire
 						smtpMessage.getTo().add(value);
-					} else if ("From".equalsIgnoreCase(name)) {
+					} else if (StringUtils.equalsIgnoreCase(name, "From")) {
 						// Expéditeur
 						smtpMessage.setFrom(value);
-					} else if ("Cc".equalsIgnoreCase(name)) {
+					} else if (StringUtils.equalsIgnoreCase(name, "Cc")) {
 						// Destinataire en copie
 						smtpMessage.getCc().add(value);
-					} else if ("Bcc".equalsIgnoreCase(name)) {
+					} else if (StringUtils.equalsIgnoreCase(name, "Bcc")) {
 						// Destinataire
 						smtpMessage.getBcc().add(value);
+					} else if (StringUtils.equalsIgnoreCase(name,
+							"Content-Type")) {
+						smtpMessage.setContentType(value);
 					} else {
 						// Other headers
 						smtpMessage.addHeader(name, value);
 					}
 				}
 			} else if (SmtpState.DATA_BODY == response.getNextState()) {
-				smtpMessage.appendBody(params);
-				smtpMessage.appendBody("<br/>");
+				if (org.apache.commons.lang.StringUtils.isNotEmpty(params)) {
+					smtpMessage.appendBody(params);
+					smtpMessage.appendBody("\n");
+				}
 			}
 		}
 	}

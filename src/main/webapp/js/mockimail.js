@@ -35,11 +35,19 @@
 			for(var i=0;i<data.hits.hits.length;i++) {
 				var hit=data.hits.hits[i];
 				var smtpMessage=hit._source;
-				var tr=trSample.clone();
+				var tr=trSample.clone().addClass('subject');
 				tr.click(function(trClosure,smtpMessageClosure){
 					return function(){
-						$(this).unbind( "click" );
-						trSample.clone().append(tdSampleBody.clone().html(smtpMessageClosure.body)).insertAfter(trClosure);
+						if($(this).hasClass('open')){
+							//On ferme le body
+							$(this).next().remove();
+							$(this).removeClass('open');
+						}else{
+							//On ajoute le body
+							trSample.clone().append(tdSampleBody.clone().html(smtpMessageClosure.body)).insertAfter(trClosure);
+							$(this).addClass('open');
+						}
+						
 					}
 				}(tr,smtpMessage));
 				var datetime=new Date(smtpMessage.date);

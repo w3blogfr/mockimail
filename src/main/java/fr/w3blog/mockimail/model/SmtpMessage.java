@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dumbster.smtp;
+package fr.w3blog.mockimail.model;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,7 +29,7 @@ import java.util.Set;
  */
 public class SmtpMessage {
 
-	private Date date;
+	private Date date = new Date();
 
 	private String subject;
 
@@ -50,11 +50,15 @@ public class SmtpMessage {
 	 */
 	private List<String> bcc = new ArrayList<String>();
 
+	private String contentType;
+
 	/** Headers: Map of List of String hashed on header name. */
 	private Map<String, List<String>> headers;
 
 	/** Message body. */
 	private StringBuffer body;
+
+	private List<PartMessage> parts = new ArrayList<PartMessage>();
 
 	/**
 	 * Constructor. Initializes headers Map and body buffer.
@@ -197,6 +201,22 @@ public class SmtpMessage {
 
 	public void setBcc(List<String> bcc) {
 		this.bcc = bcc;
+	}
+
+	public String getContentType() {
+		return contentType;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
+	}
+
+	public List<PartMessage> getParts() {
+		return parts;
+	}
+
+	public void setParts(List<PartMessage> parts) {
+		this.parts = parts;
 	}
 
 }

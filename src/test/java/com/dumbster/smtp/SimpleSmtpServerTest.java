@@ -24,6 +24,9 @@ import javax.mail.Transport;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.InternetAddress;
+
+import fr.w3blog.mockimail.model.SmtpMessage;
+
 import java.util.Properties;
 import java.util.Date;
 import java.util.Iterator;
