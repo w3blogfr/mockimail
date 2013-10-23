@@ -6,6 +6,8 @@ public class PartMessage {
 
 	private String body;
 
+	private String fileName;
+
 	public String getContentType() {
 		return contentType;
 	}
@@ -20,6 +22,14 @@ public class PartMessage {
 
 	public void setBody(String body) {
 		this.body = body;
+	}
+
+	public String getFileName() {
+		return fileName;
+	}
+
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
 	}
 
 }

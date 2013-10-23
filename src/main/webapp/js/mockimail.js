@@ -40,11 +40,11 @@
 					return function(){
 						if($(this).hasClass('open')){
 							//On ferme le body
-							$(this).next().remove();
+							$(this).next('.message-body').hide();
 							$(this).removeClass('open');
 						}else{
 							//On ajoute le body
-							trSample.clone().append(tdSampleBody.clone().html(smtpMessageClosure.body)).insertAfter(trClosure);
+							$(this).next('.message-body').show();
 							$(this).addClass('open');
 						}
 						
@@ -82,6 +82,29 @@
 				}
 				tr.append(tdSample.clone().html(toText));
 				tbody.append(tr);
+				
+				//On ajoute une ligne pour le body
+				var trBody=trSample.clone().addClass('message-body');
+				var bodyMessage="";
+				if(smtpMessage.parts){
+					for(var j=0;j<smtpMessage.parts.length;j++){
+						var partMessage=smtpMessage.parts[j];
+						if(partMessage.contentType.contains("text/")){
+							bodyMessage=bodyMessage+partMessage.body;
+							bodyMessage=bodyMessage+'<hr/>';
+						}else {
+							//Attached file
+							bodyMessage=bodyMessage+"<br/>Attached File : "+partMessage.fileName;
+						}
+					}
+				}else{
+					//TODO to remove
+					bodyMessage=bodyMessage+smtpMessage.body;
+				}
+				
+				trBody.append(tdSampleBody.clone().html(bodyMessage));
+				
+				tbody.append(trBody);
 			 }
 			$('#resultats').show();
 		});

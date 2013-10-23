@@ -222,6 +222,42 @@ public class SimpleSmtpServer implements Runnable {
 							smtpMessage.getParts().add(partMessage);
 							partMessage = new PartMessage();
 							bodyPart = new StringBuilder();
+						} else if (StringUtils.isEmpty(partMessage
+								.getFileName())
+								&& !StringUtils.containsIgnoreCase(
+										partMessage.getContentType(), "text/")
+								&& StringUtils
+										.containsIgnoreCase(line, "name=")) {
+							// We are looking for file name of attached file
+							int headerNameEnd = line.indexOf("=\"");
+							if (headerNameEnd >= 0) {
+								String fileName = "";
+								while (line != null
+										&& line.indexOf("\"", headerNameEnd + 3) < 0) {
+									// Filename is on multi line
+									// We read stream until we find double quote
+									fileName = fileName
+											+ MimeUtility.decodeText(line);
+									line = buffIn.readLine();
+								}
+
+								// And Remove last double quote
+								fileName = fileName
+										+ MimeUtility.decodeText(
+												line.substring(0,
+														line.length() - 1))
+												.trim();
+								// Remove name="
+								fileName = fileName.substring(
+										fileName.indexOf("=\"") + 2,
+										fileName.length()); // new indexOf
+															// because we remove
+															// whitespace with
+															// trim()
+
+								partMessage.setFileName(fileName);
+							}
+							bodyPart.append(line);
 						} else if (!StringUtils.containsIgnoreCase(line,
 								"Content-Transfer-Encoding")) {
 							// Body

@@ -53,3 +53,7 @@ table.formatting td {
 tr.subject{
 	cursor: pointer;
 }
+
+tr.message-body{
+	display:none;
+}
