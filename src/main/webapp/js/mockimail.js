@@ -89,7 +89,7 @@
 				if(smtpMessage.parts){
 					for(var j=0;j<smtpMessage.parts.length;j++){
 						var partMessage=smtpMessage.parts[j];
-						if(partMessage.contentType.contains("text/")){
+						if(partMessage.contentType.indexOf("text/")>=0){
 							bodyMessage=bodyMessage+partMessage.body;
 							bodyMessage=bodyMessage+'<hr/>';
 						}else {
