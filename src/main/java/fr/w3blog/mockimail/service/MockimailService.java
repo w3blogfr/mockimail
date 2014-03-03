@@ -158,7 +158,7 @@ public class MockimailService extends AbstractHandler {
 
 	public static void main(String... args) throws Exception {
 
-		Integer port = 1981;
+		Integer port = 8080;
 		MockimailConfig mockimailConfig = new MockimailConfig();
 
 		ContextHandlerCollection contexts = new ContextHandlerCollection();
