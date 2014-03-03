@@ -219,4 +219,8 @@ public class SmtpMessage {
 		this.parts = parts;
 	}
 
+	public void addPart(PartMessage part) {
+		this.parts.add(part);
+	}
+
 }

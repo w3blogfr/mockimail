@@ -8,6 +8,16 @@ public class PartMessage {
 
 	private String fileName;
 
+	public PartMessage() {
+		super();
+	}
+
+	public PartMessage(String contentType, String body) {
+		super();
+		this.contentType = contentType;
+		this.body = body;
+	}
+
 	public String getContentType() {
 		return contentType;
 	}

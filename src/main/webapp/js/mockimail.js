@@ -20,7 +20,7 @@
 		}
 		$.ajax({
 			type:"GET",
-			url:"rest/mail/search",
+			url:"api/search",
 		    contentType: "application/json; charset=utf-8",
 		    dataType: "json",
 		    data:params
